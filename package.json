@@ -1,7 +1,0 @@
-{
-  "name": "linjian-mcp",
-  "version": "1.0.0",
-  "scripts": {
-    "start": "node mcp/server.js"
-  }
-}
