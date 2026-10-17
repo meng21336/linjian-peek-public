@@ -44,7 +44,18 @@ const server = http.createServer((req, res) => {
   req.pipe(upstream);
 });
 
-server.listen(PUBLIC_PORT, "0.0.0.0", () => {
-  console.log(`[proxy] listening on 0.0.0.0:${PUBLIC_PORT}`);
-  console.log(`[proxy] mcp -> 127.0.0.1:${MCP_PORT} | backend -> 127.0.0.1:${BACKEND_PORT}`);
-});
+// 同时监听多个端口，兼容各平台的路由端口约定：
+//   - $PORT（Render 等平台注入）
+//   - 8000（Koyeb 默认 HTTP 端口）
+//   - 7860（HF Spaces / Dockerfile EXPOSE 约定）
+const LISTEN_PORTS = [...new Set([PUBLIC_PORT, 8000, 7860].filter((p) => Number.isFinite(p) && p > 0))];
+let listenCount = 0;
+for (const port of LISTEN_PORTS) {
+  server.listen(port, "0.0.0.0", () => {
+    listenCount += 1;
+    console.log(`[proxy] listening on 0.0.0.0:${port}`);
+    if (listenCount === LISTEN_PORTS.length) {
+      console.log(`[proxy] mcp -> 127.0.0.1:${MCP_PORT} | backend -> 127.0.0.1:${BACKEND_PORT}`);
+    }
+  });
+}
