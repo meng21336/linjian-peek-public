@@ -52,7 +52,7 @@ git clone -b render-unified https://github.com/meng21336/linjian-peek-public.git
 cd ~/linjian
 
 # 第 2 段：安装依赖（约 1-2 分钟）
-npm install --omit=dev --prefix mcp
+cd ~/linjian/mcp && npm install --omit=dev && cd ~/linjian
 
 # 第 3 段：确认运行环境（应显示 node v20+/v22+、python 3.x）
 node -v; python3 -v
