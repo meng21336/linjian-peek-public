@@ -1,50 +1,31 @@
-# Render Blueprint for 掌心窗公开版 v0.3.8.2
-# 一键部署会创建两个服务：手机端后端 server + MCP 服务。
-# 部署后：
-# - 手机 App 填 zhangxinchuang-server 的外部地址。
-# - AI/MCP 客户端填 zhangxinchuang-mcp 的 /mcp 或 /sse 地址。
+# Render Blueprint - 掌心窗公开版 unified 单服务版
+# 把 Python 后端 + Node MCP + 反向代理合并到一个 Docker Web Service，
+# 适配 Render 免费套餐（750 实例小时/月，单服务全天候运行不超额）。
+# 双服务版配置见 git 历史（v0.3.8.8 之前的 render.yaml）。
 #
-# v0.3.6.6 修正：MCP 的 LINJIAN_URL 不再使用 Render 内网 hostport，
-# 而是自动引用 server 服务的公网 RENDER_EXTERNAL_URL。
-# 如果旧用户只重新部署 MCP、没有同步 Blueprint，新版 MCP 代码也会把旧 hostport
-# 自动兜底为 https://<server-host>.onrender.com，不需要手动填写 server URL。
-
-envVarGroups:
-  - name: zhangxinchuang-public-shared
-    envVars:
-      - key: LINJIAN_TOKEN
-        generateValue: true
-      - key: LINJIAN_DEFAULT_DEVICE
-        value: android-phone
-
+# 部署方式一：Render 后台 → New + → Blueprint → 选择本仓库与分支。
+# 部署方式二：New + → Web Service → Public Git repository 粘贴仓库地址，
+#   手动按下方参数创建（Runtime=Docker, Dockerfile Path=./Dockerfile）。
+#
+# 部署后：
+# - 手机 App 填服务的外部地址（根域名，不带路径）。
+# - AI/MCP 客户端填 <域名>/mcp 或 <域名>/sse。
 services:
   - type: web
-    name: zhangxinchuang-server
-    runtime: python
+    name: linjian-mcp-service
+    runtime: docker
     plan: free
-    rootDir: server
-    buildCommand: echo ok
-    startCommand: python linjian_server.py
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
     envVars:
-      - fromGroup: zhangxinchuang-public-shared
+      # 部署时需要在后台填写（与手机 App、MCP 共用的访问令牌）
+      - key: LINJIAN_TOKEN
+        sync: false
       - key: LINJIAN_HOST
         value: 0.0.0.0
+      - key: LINJIAN_DEFAULT_DEVICE
+        value: android-phone
       - key: LINJIAN_KEEP
-        value: 3
-
-  - type: web
-    name: zhangxinchuang-mcp
-    runtime: node
-    plan: free
-    rootDir: mcp
-    buildCommand: npm install
-    startCommand: npm start
-    envVars:
-      - fromGroup: zhangxinchuang-public-shared
-      # 自动取 server 的公网 HTTPS 地址，例如 https://zhangxinchuang-server-xxxx.onrender.com
-      # 不再取 property: hostport，避免部分环境下 MCP 访问 Render 内网地址 fetch failed。
-      - key: LINJIAN_URL
-        fromService:
-          type: web
-          name: zhangxinchuang-server
-          envVarKey: RENDER_EXTERNAL_URL
+        value: "3"
